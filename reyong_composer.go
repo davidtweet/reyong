@@ -1,3 +1,7 @@
+// Copyright 2015 David Tweet.  All rights reserved.
+// Use of this source code is governed by the Apache 2.0
+// license which can be found in the LICENSE file.
+
 package main
 
 import (
@@ -70,8 +74,8 @@ func GeneratePolos() []rune {
 			disqualified = append(disqualified, pattern[i-1])
 		}
 		if i == PATTERN_LENGTH-1 {
-			// No more than three notes without a rest, when you consider that
-			// the pattern wraps around from the end to the beginning of the pattern.
+			// No more than three notes without a rest, considering that
+			// the pattern wraps around from the end to the beginning.
 			if pattern[0] != REST &&
 				pattern[1] != REST &&
 				(pattern[2] != REST || pattern[i-1] != REST) {
