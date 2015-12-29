@@ -9,10 +9,10 @@ import (
 const (
 	PATTERN_LENGTH = 32
 	REST           = '.'
-	POLOS_NOTE_A   = '2'
-	POLOS_NOTE_B   = '3'
-	SANGSIH_NOTE_A = '5'
-	SANGSIH_NOTE_B = '6'
+	POLOS_NOTE_A   = '1'
+	POLOS_NOTE_B   = '2'
+	SANGSIH_NOTE_A = '3'
+	SANGSIH_NOTE_B = '4'
 )
 
 type patternOptions map[rune]bool
@@ -41,41 +41,51 @@ func (po patternOptions) Random() (r rune, e error) {
 
 func GeneratePolos() []rune {
 	pattern := make([]rune, PATTERN_LENGTH)
+	// No starting a polos pattern with a rest.
 	disqualified := []rune{REST}
-	counting := false
+	log_revisions := false
 	for i := 0; i < PATTERN_LENGTH; i++ {
 		if len(disqualified) > 0 && i != 0 {
-			counting = true
+			log_revisions = true
 		}
-		if counting == true {
-			fmt.Printf("Revising polos index %v. Disqualified is [%v]. Pattern is [%v].\n", i, string(disqualified), string(pattern))
+		if log_revisions == true {
+			fmt.Printf("Revising polos index %v. ", i)
+			fmt.Printf("Disqualified is [%v]. ", string(disqualified))
+			fmt.Printf("Pattern is [%v].\n", string(pattern))
 		}
 		polos_options := patternOptions{
 			POLOS_NOTE_A: true,
 			POLOS_NOTE_B: true,
 			REST:         true,
 		}
+		// No more than three notes without a rest.
 		if i >= 3 &&
 			pattern[i-3] != REST &&
 			pattern[i-2] != REST &&
 			pattern[i-1] != REST {
 			disqualified = append(disqualified, POLOS_NOTE_A, POLOS_NOTE_B)
 		}
+		// No repeating notes or rests.
 		if i > 0 {
 			disqualified = append(disqualified, pattern[i-1])
 		}
 		if i == PATTERN_LENGTH-1 {
+			// No more than three notes without a rest, when you consider that
+			// the pattern wraps around from the end to the beginning of the pattern.
 			if pattern[0] != REST &&
 				pattern[1] != REST &&
 				(pattern[2] != REST || pattern[i-1] != REST) {
 				disqualified = append(disqualified, POLOS_NOTE_A, POLOS_NOTE_B)
 			}
+			// Don't let the first and last note of the pattern be the same.
 			disqualified = append(disqualified, pattern[0])
 		}
 		for _, option := range disqualified {
 			polos_options[option] = false
 		}
 		option, err := polos_options.Random()
+		// If we paint ourselves into a corner and have no valid options,
+		// go back and replace the last note with something different.
 		if err != nil {
 			if i == 0 {
 				panic("No valid options at zeroth index of pattern.")
@@ -93,5 +103,5 @@ func GeneratePolos() []rune {
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	polos_pattern := GeneratePolos()
-	fmt.Println(string(polos_pattern))
+	fmt.Printf("polos:    [%v]\n", string(polos_pattern))
 }
