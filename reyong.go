@@ -143,9 +143,9 @@ func SetupSangsih(p []rune, pattern_len int) Role {
 	return sangsih
 }
 
-func GeneratePolosAndSangsih(pattern_len int) ([]rune, []rune) {
-	polos := SetupPolos([]rune{}, pattern_len)
-	sangsih := SetupSangsih([]rune{}, pattern_len)
+func GeneratePolosAndSangsih(initial_polos []rune, initial_sangsih []rune, pattern_len int) ([]rune, []rune) {
+	polos := SetupPolos(initial_polos, pattern_len)
+	sangsih := SetupSangsih(initial_sangsih, pattern_len)
 	polos.FillPattern(sangsih)
 	sangsih.FillPattern(polos)
 	return polos.pattern, sangsih.pattern
@@ -180,12 +180,12 @@ func formatBadOptionsList(bad_list []rune) string {
 
 func (r Role) FillPattern(other_role Role) {
 	unworkable_subpatterns := &UnworkableSubpatterns{}
-	backtracking := false
+	revising := false
 	pattern_len := len(r.pattern)
 	log.Info("Filling ", r.name, " pattern")
 	for i := 0; i < pattern_len; i++ {
 		bad := unworkable_subpatterns.BadEndingsFor(r.pattern[:i])
-		if backtracking == true {
+		if revising == true {
 			log.WithFields(log.Fields{
 				"index":         i,
 				"bad_options":   formatBadOptionsList(bad),
@@ -196,12 +196,12 @@ func (r Role) FillPattern(other_role Role) {
 		bad = append(bad, r.NoRepeats(i)...)
 		bad = append(bad, r.NoMoreThanThreeNotesWithoutARest(i)...)
 		bad = append(bad, r.NoRepeatingSingleNoteAndRestPairs(i)...)
+		bad = append(bad, r.HarmonizePolosAndSangsih(i, other_role)...)
+		bad = append(bad, r.NoSharedRests(i, other_role)...)
 		if r.name == "polos" {
 			bad = append(bad, r.NoStartingWithARest(i)...)
 		} else if r.name == "sangsih" {
 			bad = append(bad, r.StartWithARest(i)...)
-			bad = append(bad, r.HarmonizePolosAndSangsih(i, other_role)...)
-			bad = append(bad, r.NoSharedRests(i, other_role)...)
 		}
 		all_options := []rune{r.note_a, r.note_b, r.rest}
 		valid_options := make([]rune, 0)
@@ -215,11 +215,13 @@ func (r Role) FillPattern(other_role Role) {
 				panic("No valid options at zeroth index of pattern.")
 			}
 			unworkable_subpatterns.Add(r.pattern[:i])
-			backtracking = true
+			revising = true
 			i = i - 2
 		} else {
-			r.pattern[i] = valid_options[rand.Intn(len(valid_options))]
-			backtracking = false
+			if !strings.ContainsRune(string(valid_options), r.pattern[i]) {
+				r.pattern[i] = valid_options[rand.Intn(len(valid_options))]
+			}
+			revising = false
 		}
 	}
 }

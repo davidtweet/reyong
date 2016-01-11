@@ -6,15 +6,15 @@ import (
 )
 
 func TestNoStartingWithARest(t *testing.T) {
-	polos := reyong.SetupPolos([]rune{})
+	polos := reyong.SetupPolos([]rune{}, 32)
 	bad := polos.NoStartingWithARest(0)
-	if !(bad[0] == polos.rest) {
+	if !(bad[0] == '.') {
 		t.Fail()
 	}
 }
 
 func TestNoRepeats(t *testing.T) {
-	polos := reyong.SetupPolos([]rune("12"))
+	polos := reyong.SetupPolos([]rune("12"), 32)
 	bad := polos.NoRepeats(2)
 	if !(bad[0] == '2') {
 		t.Fail()
@@ -22,22 +22,22 @@ func TestNoRepeats(t *testing.T) {
 }
 
 func TestNoMoreThanThreeNotesWithoutARest(t *testing.T) {
-	polos1 := reyong.SetupPolos([]rune("1.212"))
+	polos1 := reyong.SetupPolos([]rune("1.212"), 32)
 	bad1 := polos1.NoMoreThanThreeNotesWithoutARest(5)
 	if !(bad1[0] == '1' && bad1[1] == '2') {
 		t.Fail()
 	}
-	polos2 := reyong.SetupPolos([]rune("21.21.21.21.212.12.12.12.121.1"))
+	polos2 := reyong.SetupPolos([]rune("21.21.21.21.212.12.12.12.121.1"), 32)
 	bad2 := polos2.NoMoreThanThreeNotesWithoutARest(31)
 	if !(bad2[0] == '1' && bad2[1] == '2') {
 		t.Fail()
 	}
-	polos3 := reyong.SetupPolos([]rune("2.121.21.21.212.12.12.12.12.21"))
+	polos3 := reyong.SetupPolos([]rune("2.121.21.21.212.12.12.12.12.21"), 32)
 	bad3 := polos3.NoMoreThanThreeNotesWithoutARest(31)
 	if !(bad3[0] == '1' && bad3[1] == '2') {
 		t.Fail()
 	}
-	polos4 := reyong.SetupPolos([]rune("212.1.21.21.212.12.12.12.1.12."))
+	polos4 := reyong.SetupPolos([]rune("212.1.21.21.212.12.12.12.1.12."), 32)
 	bad4 := polos4.NoMoreThanThreeNotesWithoutARest(31)
 	if !(bad4[0] == '1' && bad4[1] == '2') {
 		t.Fail()
@@ -45,17 +45,17 @@ func TestNoMoreThanThreeNotesWithoutARest(t *testing.T) {
 }
 
 func TestNoRepeatingSingleNoteAndRestPairs(t *testing.T) {
-	polos1 := reyong.SetupPolos([]rune("1.2"))
+	polos1 := reyong.SetupPolos([]rune("1.2"), 32)
 	bad1 := polos1.NoRepeatingSingleNoteAndRestPairs(3)
 	if !(bad1[0] == '.') {
 		t.Fail()
 	}
-	polos2 := reyong.SetupPolos([]rune("1.212.1.2"))
+	polos2 := reyong.SetupPolos([]rune("1.212.1.2"), 32)
 	bad2 := polos2.NoRepeatingSingleNoteAndRestPairs(9)
 	if !(bad2[0] == '.') {
 		t.Fail()
 	}
-	polos3 := reyong.SetupPolos([]rune("2.121.21.212.212.12.12.12.121.1"))
+	polos3 := reyong.SetupPolos([]rune("2.121.21.212.212.12.12.12.121.1"), 32)
 	bad3 := polos3.NoRepeatingSingleNoteAndRestPairs(31)
 	if !(bad3[0] == '.') {
 		t.Fail()
