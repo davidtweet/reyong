@@ -8,7 +8,7 @@ import (
 func TestNoStartingWithARest(t *testing.T) {
 	polos := reyong.SetupPolos([]rune{})
 	bad := polos.NoStartingWithARest(0)
-	if !(bad[0] == reyong.REST) {
+	if !(bad[0] == polos.rest) {
 		t.Fail()
 	}
 }

@@ -5,25 +5,20 @@
 package reyong
 
 import (
-	"fmt"
+	log "github.com/Sirupsen/logrus"
 	"math/rand"
-)
-
-const (
-	PATTERN_LEN = 32
-	REST        = '.'
+	"strings"
 )
 
 type Role struct {
 	name    string
 	note_a  rune
 	note_b  rune
+	rest    rune
 	pattern []rune
 }
 
 type UnworkableSubpatterns [][]rune
-
-type PatternOptions map[rune]bool
 
 type NoValidOptionsError struct {
 	s string
@@ -33,23 +28,11 @@ func (e NoValidOptionsError) Error() string {
 	return e.s
 }
 
-func SameElements(s1 []rune, s2 []rune) bool {
-	if len(s1) != len(s2) {
-		return false
-	}
-	for i, _ := range s1 {
-		if s1[i] != s2[i] {
-			return false
-		}
-	}
-	return true
-}
-
 func (usps *UnworkableSubpatterns) BadEndingsFor(subpattern []rune) []rune {
 	subp_length := len(subpattern)
 	bad := make([]rune, 0)
 	for _, usp := range *usps {
-		if subp_length == len(usp)-1 && SameElements(subpattern, usp[:subp_length]) {
+		if subp_length == len(usp)-1 && string(subpattern) == string(usp[:subp_length]) {
 			bad = append(bad, usp[subp_length])
 		}
 	}
@@ -57,29 +40,19 @@ func (usps *UnworkableSubpatterns) BadEndingsFor(subpattern []rune) []rune {
 }
 
 func (usps *UnworkableSubpatterns) Add(pattern []rune) {
+	log.WithFields(log.Fields{
+		"subpattern": string(pattern),
+		"length":     len(pattern),
+	}).Info("Adding unworkable subpattern")
 	new_pattern := make([]rune, len(pattern))
 	copy(new_pattern, pattern)
 	*usps = append(*usps, new_pattern)
 }
 
-func (po PatternOptions) Random() (r rune, e error) {
-	candidate_list := make([]rune, 0)
-	for candidate, included := range po {
-		if included == true {
-			candidate_list = append(candidate_list, candidate)
-		}
-	}
-	if len(candidate_list) > 0 {
-		return candidate_list[rand.Intn(len(candidate_list))], nil
-	} else {
-		return 0, NoValidOptionsError{"No valid options."}
-	}
-}
-
 func (r Role) NoStartingWithARest(i int) []rune {
 	bad := make([]rune, 0)
 	if i == 0 {
-		bad = append(bad, REST)
+		bad = append(bad, r.rest)
 	}
 	return bad
 }
@@ -97,26 +70,27 @@ func (r Role) NoRepeats(i int) []rune {
 	if i > 0 {
 		bad = append(bad, r.pattern[i-1])
 	}
-	if i == PATTERN_LEN-1 {
+	if i == len(r.pattern)-1 {
 		bad = append(bad, r.pattern[0])
 	}
 	return bad
 }
 
 func (r Role) NoMoreThanThreeNotesWithoutARest(i int) []rune {
+	pattern_len := len(r.pattern)
 	bad := make([]rune, 0)
 	if i >= 3 &&
-		r.pattern[i-3] != REST &&
-		r.pattern[i-2] != REST &&
-		r.pattern[i-1] != REST {
+		r.pattern[i-3] != r.rest &&
+		r.pattern[i-2] != r.rest &&
+		r.pattern[i-1] != r.rest {
 		bad = append(bad, r.note_a, r.note_b)
 	}
-	if i == PATTERN_LEN-1 {
+	if i == pattern_len-1 {
 		for n := i - 2; n <= i; n++ {
-			if (r.pattern[n] != REST || n == i) &&
-				(r.pattern[(n+1)%PATTERN_LEN] != REST || (n+1)%PATTERN_LEN == i) &&
-				(r.pattern[(n+2)%PATTERN_LEN] != REST || (n+2)%PATTERN_LEN == i) &&
-				(r.pattern[(n+3)%PATTERN_LEN] != REST || (n+3)%PATTERN_LEN == i) {
+			if (r.pattern[n] != r.rest || n == i) &&
+				(r.pattern[(n+1)%pattern_len] != r.rest || (n+1)%pattern_len == i) &&
+				(r.pattern[(n+2)%pattern_len] != r.rest || (n+2)%pattern_len == i) &&
+				(r.pattern[(n+3)%pattern_len] != r.rest || (n+3)%pattern_len == i) {
 				bad = append(bad, r.note_a, r.note_b)
 			}
 		}
@@ -125,23 +99,24 @@ func (r Role) NoMoreThanThreeNotesWithoutARest(i int) []rune {
 }
 
 func (r Role) NoRepeatingSingleNoteAndRestPairs(i int) []rune {
+	pattern_len := len(r.pattern)
 	bad := make([]rune, 0)
-	if (i == 3 && r.pattern[i-2] == REST) ||
-		(i > 3 && r.pattern[i-2] == REST && r.pattern[i-4] == REST) {
-		bad = append(bad, REST)
+	if (i == 3 && r.pattern[i-2] == r.rest) ||
+		(i > 3 && r.pattern[i-2] == r.rest && r.pattern[i-4] == r.rest) {
+		bad = append(bad, r.rest)
 	}
-	if (i == PATTERN_LEN-1 || i == PATTERN_LEN-2) &&
-		r.pattern[(i+2)%PATTERN_LEN] == REST &&
-		(r.pattern[i-2] == REST || r.pattern[(i+4)%PATTERN_LEN] == REST) {
-		bad = append(bad, REST)
+	if (i == pattern_len-1 || i == pattern_len-2) &&
+		r.pattern[(i+2)%pattern_len] == r.rest &&
+		(r.pattern[i-2] == r.rest || r.pattern[(i+4)%pattern_len] == r.rest) {
+		bad = append(bad, r.rest)
 	}
 	return bad
 }
 
 func (r Role) NoSharedRests(i int, other_role Role) []rune {
 	bad := make([]rune, 0)
-	if other_role.pattern[i] == REST {
-		bad = append(bad, REST)
+	if other_role.pattern[i] == r.rest {
+		bad = append(bad, r.rest)
 	}
 	return bad
 }
@@ -156,45 +131,67 @@ func (r Role) HarmonizePolosAndSangsih(i int, other_role Role) []rune {
 	return bad
 }
 
-func SetupPolos(p []rune) Role {
-	polos := Role{"polos", '1', '2', make([]rune, PATTERN_LEN)}
+func SetupPolos(p []rune, pattern_len int) Role {
+	polos := Role{"polos", '1', '2', '.', make([]rune, pattern_len)}
 	copy(polos.pattern, p)
 	return polos
 }
 
-func SetupSangsih(p []rune) Role {
-	sangsih := Role{"sangsih", '3', '4', make([]rune, PATTERN_LEN)}
+func SetupSangsih(p []rune, pattern_len int) Role {
+	sangsih := Role{"sangsih", '3', '4', '.', make([]rune, pattern_len)}
 	copy(sangsih.pattern, p)
 	return sangsih
 }
 
-func GeneratePolosAndSangsih() ([]rune, []rune) {
-	polos := SetupPolos([]rune{})
-	sangsih := SetupSangsih([]rune{})
+func GeneratePolosAndSangsih(pattern_len int) ([]rune, []rune) {
+	polos := SetupPolos([]rune{}, pattern_len)
+	sangsih := SetupSangsih([]rune{}, pattern_len)
 	polos.FillPattern(sangsih)
 	sangsih.FillPattern(polos)
 	return polos.pattern, sangsih.pattern
 }
 
+func formatPatternInProgress(pattern []rune, i int) string {
+	out := make([]rune, 0)
+	for n, r := range pattern {
+		if n == i {
+			out = append(out, '(', r, ')')
+		} else if r == 0 {
+			out = append(out, 'X')
+		} else {
+			out = append(out, r)
+		}
+	}
+	return string(out)
+}
+
+func formatBadOptionsList(bad_list []rune) string {
+	out := make([]rune, 0)
+	out = append(out, '[')
+	for _, r := range bad_list {
+		if len(out) > 1 {
+			out = append(out, ',')
+		}
+		out = append(out, '\'', r, '\'')
+	}
+	out = append(out, ']')
+	return string(out)
+}
+
 func (r Role) FillPattern(other_role Role) {
 	unworkable_subpatterns := &UnworkableSubpatterns{}
 	backtracking := false
-	for i := 0; i < PATTERN_LEN; i++ {
+	pattern_len := len(r.pattern)
+	log.Info("Filling ", r.name, " pattern")
+	for i := 0; i < pattern_len; i++ {
 		bad := unworkable_subpatterns.BadEndingsFor(r.pattern[:i])
 		if backtracking == true {
-			fmt.Printf("Revising %v index %v. ", r.name, i)
-			fmt.Printf("Bad is [%v].\n", string(bad))
-			fmt.Printf("Pattern is [%v].\n", string(r.pattern))
-			fmt.Printf("Other patt:[%v].\n", string(other_role.pattern))
-			fmt.Printf("Unworkable subpatterns are:\n")
-			for _, patt := range *unworkable_subpatterns {
-				fmt.Println(string(patt))
-			}
-		}
-		options := PatternOptions{
-			r.note_a: true,
-			r.note_b: true,
-			REST:     true,
+			log.WithFields(log.Fields{
+				"index":         i,
+				"bad_options":   formatBadOptionsList(bad),
+				r.name:          formatPatternInProgress(r.pattern, i),
+				other_role.name: formatPatternInProgress(other_role.pattern, i),
+			}).Info("Revising pattern")
 		}
 		bad = append(bad, r.NoRepeats(i)...)
 		bad = append(bad, r.NoMoreThanThreeNotesWithoutARest(i)...)
@@ -206,20 +203,22 @@ func (r Role) FillPattern(other_role Role) {
 			bad = append(bad, r.HarmonizePolosAndSangsih(i, other_role)...)
 			bad = append(bad, r.NoSharedRests(i, other_role)...)
 		}
-		for _, option := range bad {
-			options[option] = false
+		all_options := []rune{r.note_a, r.note_b, r.rest}
+		valid_options := make([]rune, 0)
+		for _, option := range all_options {
+			if !strings.ContainsRune(string(bad), option) {
+				valid_options = append(valid_options, option)
+			}
 		}
-		option, err := options.Random()
-		if err != nil {
+		if len(valid_options) == 0 {
 			if i == 0 {
 				panic("No valid options at zeroth index of pattern.")
 			}
-			fmt.Printf("Had no options at index %v\n", i)
 			unworkable_subpatterns.Add(r.pattern[:i])
 			backtracking = true
 			i = i - 2
 		} else {
-			r.pattern[i] = option
+			r.pattern[i] = valid_options[rand.Intn(len(valid_options))]
 			backtracking = false
 		}
 	}
