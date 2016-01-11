@@ -10,19 +10,16 @@ import (
 )
 
 const (
-	PATTERN_LEN    = 32
-	REST           = '.'
-	POLOS_NOTE_A   = '1'
-	POLOS_NOTE_B   = '2'
-	SANGSIH_NOTE_A = '3'
-	SANGSIH_NOTE_B = '4'
+	PATTERN_LEN = 32
+	REST        = '.'
 )
 
-//type Instrument struct {
-//	name   string
-//	note_a rune
-//	note_b rune
-//}
+type Role struct {
+	name    string
+	note_a  rune
+	note_b  rune
+	pattern []rune
+}
 
 type UnworkableSubpatterns [][]rune
 
@@ -79,7 +76,7 @@ func (po PatternOptions) Random() (r rune, e error) {
 	}
 }
 
-func NoStartingWithARest(pattern []rune, i int) []rune {
+func (r Role) NoStartingWithARest(i int) []rune {
 	bad := make([]rune, 0)
 	if i == 0 {
 		bad = append(bad, REST)
@@ -87,92 +84,143 @@ func NoStartingWithARest(pattern []rune, i int) []rune {
 	return bad
 }
 
-func NoRepeats(pattern []rune, i int) []rune {
+func (r Role) StartWithARest(i int) []rune {
 	bad := make([]rune, 0)
-	if i > 0 {
-		bad = append(bad, pattern[i-1])
-	}
-	if i == PATTERN_LEN-1 {
-		bad = append(bad, pattern[0])
+	if i == 0 {
+		bad = append(bad, r.note_a, r.note_b)
 	}
 	return bad
 }
 
-func NoMoreThanThreeNotesWithoutARest(pattern []rune, i int) []rune {
+func (r Role) NoRepeats(i int) []rune {
+	bad := make([]rune, 0)
+	if i > 0 {
+		bad = append(bad, r.pattern[i-1])
+	}
+	if i == PATTERN_LEN-1 {
+		bad = append(bad, r.pattern[0])
+	}
+	return bad
+}
+
+func (r Role) NoMoreThanThreeNotesWithoutARest(i int) []rune {
 	bad := make([]rune, 0)
 	if i >= 3 &&
-		pattern[i-3] != REST &&
-		pattern[i-2] != REST &&
-		pattern[i-1] != REST {
-		bad = append(bad, POLOS_NOTE_A, POLOS_NOTE_B)
+		r.pattern[i-3] != REST &&
+		r.pattern[i-2] != REST &&
+		r.pattern[i-1] != REST {
+		bad = append(bad, r.note_a, r.note_b)
 	}
 	if i == PATTERN_LEN-1 {
 		for n := i - 2; n <= i; n++ {
-			if (pattern[n] != REST || n == i) &&
-				(pattern[(n+1)%PATTERN_LEN] != REST || (n+1)%PATTERN_LEN == i) &&
-				(pattern[(n+2)%PATTERN_LEN] != REST || (n+2)%PATTERN_LEN == i) &&
-				(pattern[(n+3)%PATTERN_LEN] != REST || (n+3)%PATTERN_LEN == i) {
-				bad = append(bad, POLOS_NOTE_A, POLOS_NOTE_B)
+			if (r.pattern[n] != REST || n == i) &&
+				(r.pattern[(n+1)%PATTERN_LEN] != REST || (n+1)%PATTERN_LEN == i) &&
+				(r.pattern[(n+2)%PATTERN_LEN] != REST || (n+2)%PATTERN_LEN == i) &&
+				(r.pattern[(n+3)%PATTERN_LEN] != REST || (n+3)%PATTERN_LEN == i) {
+				bad = append(bad, r.note_a, r.note_b)
 			}
 		}
 	}
 	return bad
 }
 
-func NoRepeatingSingleNoteAndRestPairs(pattern []rune, i int) []rune {
+func (r Role) NoRepeatingSingleNoteAndRestPairs(i int) []rune {
 	bad := make([]rune, 0)
-	if (i == 3 && pattern[i-2] == REST) ||
-		(i > 3 && pattern[i-2] == REST && pattern[i-4] == REST) {
+	if (i == 3 && r.pattern[i-2] == REST) ||
+		(i > 3 && r.pattern[i-2] == REST && r.pattern[i-4] == REST) {
 		bad = append(bad, REST)
 	}
-	if i == PATTERN_LEN-1 &&
-		pattern[i-2] == REST &&
-		pattern[(i+2)%PATTERN_LEN] == REST {
+	if (i == PATTERN_LEN-1 || i == PATTERN_LEN-2) &&
+		r.pattern[(i+2)%PATTERN_LEN] == REST &&
+		(r.pattern[i-2] == REST || r.pattern[(i+4)%PATTERN_LEN] == REST) {
 		bad = append(bad, REST)
 	}
 	return bad
 }
 
-func GeneratePolos() []rune {
-	pattern := make([]rune, PATTERN_LEN)
+func (r Role) NoSharedRests(i int, other_role Role) []rune {
+	bad := make([]rune, 0)
+	if other_role.pattern[i] == REST {
+		bad = append(bad, REST)
+	}
+	return bad
+}
+
+func (r Role) HarmonizePolosAndSangsih(i int, other_role Role) []rune {
+	bad := make([]rune, 0)
+	if other_role.pattern[i] == other_role.note_b {
+		bad = append(bad, r.note_b)
+	} else if other_role.pattern[i] == other_role.note_a {
+		bad = append(bad, r.note_a)
+	}
+	return bad
+}
+
+func SetupPolos(p []rune) Role {
+	polos := Role{"polos", '1', '2', make([]rune, PATTERN_LEN)}
+	copy(polos.pattern, p)
+	return polos
+}
+
+func SetupSangsih(p []rune) Role {
+	sangsih := Role{"sangsih", '3', '4', make([]rune, PATTERN_LEN)}
+	copy(sangsih.pattern, p)
+	return sangsih
+}
+
+func GeneratePolosAndSangsih() ([]rune, []rune) {
+	polos := SetupPolos([]rune{})
+	sangsih := SetupSangsih([]rune{})
+	polos.FillPattern(sangsih)
+	sangsih.FillPattern(polos)
+	return polos.pattern, sangsih.pattern
+}
+
+func (r Role) FillPattern(other_role Role) {
 	unworkable_subpatterns := &UnworkableSubpatterns{}
 	backtracking := false
 	for i := 0; i < PATTERN_LEN; i++ {
-		bad := unworkable_subpatterns.BadEndingsFor(pattern[:i])
+		bad := unworkable_subpatterns.BadEndingsFor(r.pattern[:i])
 		if backtracking == true {
-			fmt.Printf("Revising polos index %v. ", i)
-			fmt.Printf("Bad is [%v]. ", string(bad))
-			fmt.Printf("Pattern is [%v].\n", string(pattern))
+			fmt.Printf("Revising %v index %v. ", r.name, i)
+			fmt.Printf("Bad is [%v].\n", string(bad))
+			fmt.Printf("Pattern is [%v].\n", string(r.pattern))
+			fmt.Printf("Other patt:[%v].\n", string(other_role.pattern))
 			fmt.Printf("Unworkable subpatterns are:\n")
 			for _, patt := range *unworkable_subpatterns {
 				fmt.Println(string(patt))
 			}
 		}
-		polos_options := PatternOptions{
-			POLOS_NOTE_A: true,
-			POLOS_NOTE_B: true,
-			REST:         true,
+		options := PatternOptions{
+			r.note_a: true,
+			r.note_b: true,
+			REST:     true,
 		}
-		bad = append(bad, NoStartingWithARest(pattern, i)...)
-		bad = append(bad, NoRepeats(pattern, i)...)
-		bad = append(bad, NoMoreThanThreeNotesWithoutARest(pattern, i)...)
-		bad = append(bad, NoRepeatingSingleNoteAndRestPairs(pattern, i)...)
+		bad = append(bad, r.NoRepeats(i)...)
+		bad = append(bad, r.NoMoreThanThreeNotesWithoutARest(i)...)
+		bad = append(bad, r.NoRepeatingSingleNoteAndRestPairs(i)...)
+		if r.name == "polos" {
+			bad = append(bad, r.NoStartingWithARest(i)...)
+		} else if r.name == "sangsih" {
+			bad = append(bad, r.StartWithARest(i)...)
+			bad = append(bad, r.HarmonizePolosAndSangsih(i, other_role)...)
+			bad = append(bad, r.NoSharedRests(i, other_role)...)
+		}
 		for _, option := range bad {
-			polos_options[option] = false
+			options[option] = false
 		}
-		option, err := polos_options.Random()
+		option, err := options.Random()
 		if err != nil {
 			if i == 0 {
 				panic("No valid options at zeroth index of pattern.")
 			}
 			fmt.Printf("Had no options at index %v\n", i)
-			unworkable_subpatterns.Add(pattern[:i])
+			unworkable_subpatterns.Add(r.pattern[:i])
 			backtracking = true
 			i = i - 2
 		} else {
-			pattern[i] = option
+			r.pattern[i] = option
 			backtracking = false
 		}
 	}
-	return pattern
 }

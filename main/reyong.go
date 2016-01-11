@@ -9,6 +9,7 @@ import (
 
 func main() {
 	rand.Seed(time.Now().UnixNano())
-	polos_pattern := reyong.GeneratePolos()
+	polos_pattern, sangsih_pattern := reyong.GeneratePolosAndSangsih()
 	fmt.Printf("polos:    [%v]\n", string(polos_pattern))
+	fmt.Printf("sangsih:  [%v]\n", string(sangsih_pattern))
 }

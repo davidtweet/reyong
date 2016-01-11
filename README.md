@@ -14,11 +14,11 @@ Stylistic Constraints
 * No note or rest can repeat.
 * There can be no more than three notes without a rest.
 * Polos must start with a note, not a rest.
+* No repeated note and rest pairs, i.e. note-rest-note-rest-note.
 * Sangsih and polos cannot have a rest at the same time.
 * 1 and 3 cannot be combined, and neither can 2 and 4.
 
 TODO
 ----------
 
-* Compose sangsih as well as polos.
 * Generate audio for the patterns.
