@@ -62,6 +62,14 @@ func TestNoRepeatingSingleNoteAndRestPairs(t *testing.T) {
 	}
 }
 
+func TestNoSameNoteSeparatedByRestFollowedByRest(t *testing.T) {
+	polos1 := reyong.SetupPolos([]rune("21.1"), 32)
+	bad1 := polos1.NoSameNoteSeparatedByRestFollowedByRest(4)
+	if !(bad1[0] == '.') {
+		t.Fail()
+	}
+}
+
 func TestUnworkableSubpatterns(t *testing.T) {
 	usps := &reyong.UnworkableSubpatterns{}
 	pattern := []rune("21.1.12.12.2.12.1.212.2.212.1.1")

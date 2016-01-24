@@ -113,6 +113,16 @@ func (r Role) NoRepeatingSingleNoteAndRestPairs(i int) []rune {
 	return bad
 }
 
+func (r Role) NoSameNoteSeparatedByRestFollowedByRest(i int) []rune {
+	// pattern_len := len(r.pattern)
+	bad := make([]rune, 0)
+	if i >= 3 && r.pattern[i-2] == r.rest && r.pattern[i-1] == r.pattern[i-3] {
+		bad = append(bad, r.rest)
+	}
+	return bad
+	//TODO: Add check for end-of-pattern.
+}
+
 func (r Role) NoSharedRests(i int, other_role Role) []rune {
 	bad := make([]rune, 0)
 	if other_role.pattern[i] == r.rest {
@@ -196,6 +206,7 @@ func (r Role) FillPattern(other_role Role) {
 		bad = append(bad, r.NoRepeats(i)...)
 		bad = append(bad, r.NoMoreThanThreeNotesWithoutARest(i)...)
 		bad = append(bad, r.NoRepeatingSingleNoteAndRestPairs(i)...)
+		bad = append(bad, r.NoSameNoteSeparatedByRestFollowedByRest(i)...)
 		bad = append(bad, r.HarmonizePolosAndSangsih(i, other_role)...)
 		bad = append(bad, r.NoSharedRests(i, other_role)...)
 		if r.name == "polos" {

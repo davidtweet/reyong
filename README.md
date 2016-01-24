@@ -14,7 +14,8 @@ Stylistic Constraints
 * No note or rest can repeat.
 * There can be no more than three notes without a rest.
 * Polos must start with a note, not a rest.
-* No repeated note and rest pairs, i.e. note-rest-note-rest-note.
+* No repeated note and rest pairs, e.g. ".1.2.".
+* No same notes separated by a rest and followed by a rest, e.g. "21.1.".
 * Sangsih and polos cannot have a rest at the same time.
 * 1 and 3 cannot be combined, and neither can 2 and 4.
 
