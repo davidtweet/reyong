@@ -68,6 +68,21 @@ func TestNoSameNoteSeparatedByRestFollowedByRest(t *testing.T) {
 	if !(bad1[0] == '.') {
 		t.Fail()
 	}
+	polos2 := reyong.SetupPolos([]rune("1.121.21.212.212.12.12.12.12.21"), 32)
+	bad2 := polos2.NoSameNoteSeparatedByRestFollowedByRest(31)
+	if !(bad2[0] == '.') {
+		t.Fail()
+	}
+	sangsih1 := reyong.SetupSangsih([]rune(".34.3.43.434.434.34.34.34.3.34."), 32)
+	bad3 := sangsih1.NoSameNoteSeparatedByRestFollowedByRest(31)
+	if !(bad3[0] == '4') {
+		t.Fail()
+	}
+	sangsih2 := reyong.SetupSangsih([]rune(".3.43.43.434.434.34.34.34.343.4"), 32)
+	bad4 := sangsih2.NoSameNoteSeparatedByRestFollowedByRest(31)
+	if !(bad4[0] == '3') {
+		t.Fail()
+	}
 }
 
 func TestUnworkableSubpatterns(t *testing.T) {

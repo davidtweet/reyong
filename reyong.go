@@ -114,13 +114,21 @@ func (r Role) NoRepeatingSingleNoteAndRestPairs(i int) []rune {
 }
 
 func (r Role) NoSameNoteSeparatedByRestFollowedByRest(i int) []rune {
-	// pattern_len := len(r.pattern)
+	pattern_len := len(r.pattern)
 	bad := make([]rune, 0)
 	if i >= 3 && r.pattern[i-2] == r.rest && r.pattern[i-1] == r.pattern[i-3] {
 		bad = append(bad, r.rest)
 	}
+	if i == pattern_len-1 {
+		if r.pattern[i-1] == r.rest && r.pattern[(i+1)%pattern_len] == r.rest {
+			bad = append(bad, r.pattern[i-2])
+		} else if r.pattern[(i+1)%pattern_len] == r.rest && r.pattern[(i+3)%pattern_len] == r.rest {
+			bad = append(bad, r.pattern[(i+2)%pattern_len])
+		} else if r.pattern[(i+2)%pattern_len] == r.rest && r.pattern[i-1] == r.pattern[(i+1)%pattern_len] {
+			bad = append(bad, r.rest)
+		}
+	}
 	return bad
-	//TODO: Add check for end-of-pattern.
 }
 
 func (r Role) NoSharedRests(i int, other_role Role) []rune {
